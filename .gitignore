@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+installer-output/
+ultimo_arquivo.txt
+*.imespec
+*.log
+.DS_Store

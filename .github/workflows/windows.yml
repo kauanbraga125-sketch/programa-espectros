@@ -1,0 +1,90 @@
+name: IMESPEC para Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Testar e gerar instalador
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Instalar dependências
+        run: python -m pip install -r requirements-build.txt
+      - name: Validar cálculos e interface
+        run: python -m unittest discover -s tests -v
+      - name: Validar inicialização
+        run: python IMESPEC.py --smoke-test
+      - name: Preparar ícone
+        run: python packaging/make_icon.py
+      - name: Gerar aplicativo
+        run: python -m PyInstaller --noconfirm --clean packaging/imespec.spec
+      - name: Testar executável Qt e Raman Map
+        run: python packaging/smoke_frozen.py
+      - name: Gerar instalador
+        shell: pwsh
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $compiler)) {
+            choco install innosetup --no-progress -y
+          }
+          & $compiler /DAppVersion=1.4.0 packaging/windows.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Testar instalação e abertura
+        shell: pwsh
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP "IMESPEC-installed"
+          $setup = Resolve-Path "installer-output/IMESPEC-1.4.0-Setup.exe"
+          $proc = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$target" -PassThru -Wait
+          if ($proc.ExitCode -ne 0) { throw "Installer failed: $($proc.ExitCode)" }
+          $installed = Join-Path $target 'IMESPEC.exe'
+          foreach ($params in @(@('--smoke-test'), @('--raman-map', '--smoke-test'))) {
+            $check = Start-Process $installed -ArgumentList $params -PassThru
+            if (-not $check.WaitForExit(60000)) { $check.Kill(); throw 'Installed startup timed out' }
+            if ($check.ExitCode -ne 0) { throw "Installed startup failed: $($check.ExitCode)" }
+          }
+          $uninstaller = Join-Path $target 'unins000.exe'
+          $remove = Start-Process $uninstaller -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -PassThru -Wait
+          if ($remove.ExitCode -ne 0) { throw "Uninstall failed: $($remove.ExitCode)" }
+      - name: Preparar pacote portátil e verificação
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/IMESPEC -DestinationPath installer-output/IMESPEC-1.4.0-Windows-portatil.zip
+          Get-ChildItem installer-output -File | Where-Object Extension -ne '.sha256' | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)" | Out-File "$($_.FullName).sha256" -Encoding ascii
+          }
+      - name: Disponibilizar instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: IMESPEC-1.4.0-Instalador-Windows
+          path: |
+            installer-output/IMESPEC-1.4.0-Setup.exe
+            installer-output/IMESPEC-1.4.0-Setup.exe.sha256
+          retention-days: 90
+      - name: Disponibilizar versão portátil
+        uses: actions/upload-artifact@v4
+        with:
+          name: IMESPEC-1.4.0-Portatil-Windows
+          path: |
+            installer-output/IMESPEC-1.4.0-Windows-portatil.zip
+            installer-output/IMESPEC-1.4.0-Windows-portatil.zip.sha256
+          retention-days: 90
