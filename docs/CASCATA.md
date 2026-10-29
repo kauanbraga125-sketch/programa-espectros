@@ -45,6 +45,8 @@ Arquivos de mapas devem ser abertos no módulo Raman Map.
 
 Uma temperatura só é sugerida se o nome contiver explicitamente um número seguido de `K`.
 Ela permanece editável. Números do laser, exposição ou ampliação não são temperaturas.
+O nome `12_3K` sugere `12,3 K`, assim como `12.3K` e `12,3K`.
+Confira a convenção da aquisição ao revisar a temperatura sugerida.
 O nome sozinho não garante condições experimentais equivalentes: confira a aquisição antes
 de interpretar diferenças de intensidade entre arquivos ou janelas.
 

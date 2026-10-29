@@ -28,7 +28,7 @@ COLORS = (
     "#9333EA",
     "#475569",
 )
-TEMP_RE = re.compile(r"(?<![A-Za-z0-9])(\d+(?:[.,]\d+)?)\s*K(?=$|[^A-Za-z0-9])", re.I)
+TEMP_RE = re.compile(r"(?<![A-Za-z0-9])(\d+(?:[.,_]\d+)?)\s*K(?=$|[^A-Za-z0-9])", re.I)
 
 
 def temperature_from_name(name):
@@ -36,7 +36,7 @@ def temperature_from_name(name):
     matches = TEMP_RE.findall(Path(name).stem)
     if not matches:
         return None
-    number = float(matches[-1].replace(",", "."))
+    number = float(matches[-1].replace(",", ".").replace("_", "."))
     return number if math.isfinite(number) and number >= 0 else None
 
 

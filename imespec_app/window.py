@@ -54,6 +54,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QButtonGroup,
     QScrollArea,
+    QSizePolicy,
 )
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
@@ -111,6 +112,7 @@ QLabel#title { font-size: 21pt; font-weight: 600; }
 QFrame#card { background: white; border: 1px solid #DFE7F2; border-radius: 12px; }
 QToolBar { background: white; border: none; spacing: 4px; }
 QScrollArea { border: 0; background: white; }
+QWidget#propertiesPanel { background: white; }
 QProgressBar { border: 0; background: #E9EFF8; max-height: 4px; }
 QProgressBar::chunk { background: #2563EB; }
 """
@@ -369,6 +371,7 @@ class MainWindow(QMainWindow):
         ):
             b = button(text, lambda checked=False, mode=key: self.set_mode(mode))
             b.setObjectName("mode")
+            b.setMinimumWidth(120)
             b.setCheckable(True)
             self.mode_group.addButton(b)
             self.mode_buttons[key] = b
@@ -477,7 +480,9 @@ class MainWindow(QMainWindow):
         )
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         host = QWidget()
+        host.setObjectName("propertiesPanel")
         box = QVBoxLayout(host)
         box.setContentsMargins(16, 15, 16, 16)
         box.setSpacing(10)
@@ -510,6 +515,10 @@ class MainWindow(QMainWindow):
         box.addWidget(separator())
         box.addWidget(label("CURVA SELECIONADA", True))
         self.selected_name = label("Selecione um espectro na lista.", True)
+        self.selected_name.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
+        )
+        self.selected_name.setMinimumWidth(0)
         self.selected_name.setStyleSheet("font-size: 9pt; color: #64748B;")
         box.addWidget(self.selected_name)
         self.name_edit = QLineEdit()
@@ -814,7 +823,11 @@ class MainWindow(QMainWindow):
             return
         s = self.selected_spectrum()
         self._building = True
-        self.selected_name.setText(s.name if s else "Selecione um espectro na lista.")
+        filename = s.name if s else "Selecione um espectro na lista."
+        self.selected_name.setText(
+            filename if len(filename) <= 32 else filename[:14] + "…" + filename[-16:]
+        )
+        self.selected_name.setToolTip(s.name if s else "")
         self.name_edit.setText(s.label if s else "")
         self.temp_edit.setText(
             f"{s.temperature:g}" if s and s.temperature is not None else ""

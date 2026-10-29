@@ -64,6 +64,7 @@ class SpectrumTests(unittest.TestCase):
         self.assertEqual(result[1][2], 0)
 
     def test_temperature_parsing_is_limited_to_explicit_kelvin(self):
+        self.assertEqual(temperature_from_name("sample_Lx20_12_3K.txt"), 12.3)
         self.assertEqual(temperature_from_name("Cn_A_514nm_20x_12.3K_volta.txt"), 12.3)
         self.assertEqual(temperature_from_name("sample_85K.txt"), 85)
         self.assertIsNone(temperature_from_name("sample_514nm_3x45s_Lx20.txt"))
