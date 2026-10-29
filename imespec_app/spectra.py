@@ -333,7 +333,7 @@ def save_project(path, spectra, settings):
     document = {
         "format": "IMESPEC",
         "schema": 1,
-        "version": "1.4.0",
+        "version": "1.4.1",
         "units": {"x": "cm^-1", "y": "a.u.", "temperature": "K"},
         "settings": validate_settings(settings),
         "spectra": [],

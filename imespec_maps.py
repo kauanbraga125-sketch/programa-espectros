@@ -29,6 +29,7 @@ from imespec_analysis import (
     AREA_UNIT,
 )
 from imespec_theme import PALETTE
+from imespec_quality import QualityWorkspace
 
 
 class RamanMapCollection(ttk.Frame):
@@ -55,6 +56,7 @@ class RamanMapCollection(ttk.Frame):
         software_version,
         dependency_handler=None,
         status_callback=None,
+        quality_selector=None,
     ):
         super().__init__(master, padding=10, style="Surface.TFrame")
         self.matrix = matrix
@@ -66,6 +68,8 @@ class RamanMapCollection(ttk.Frame):
         self.software_version = software_version
         self.dependency_handler = dependency_handler
         self.status_callback = status_callback or (lambda text: None)
+        self.quality_selector = quality_selector
+        self._opening_quality = False
         self.records = []
         self.active_id = None
         self.selected_cell = None
@@ -558,6 +562,7 @@ class RamanMapCollection(ttk.Frame):
         self.status_callback(
             f"Saved {title}. {len(self.records)} band map(s) available for comparison."
         )
+        self._sync_quality_selector()
         return record
 
     def _draw_maps(self):
@@ -903,6 +908,8 @@ class RamanMapCollection(ttk.Frame):
         self.spectrum_canvas.draw_idle()
 
     def open_quality(self, map_id=None):
+        if self._opening_quality:
+            return
         record = self._record(map_id)
         if record is None:
             return
@@ -910,41 +917,50 @@ class RamanMapCollection(ttk.Frame):
             self.open_ratio_dialog(record["id"])
             return
         if record["quality_figure"] is None:
+            self._opening_quality = True
             frame = ttk.Frame(self.quality_notebook, style="Surface.TFrame")
             spectra = self.matrix.copy()
             self.quality_notebook.add(frame, text=f"  {record['name']}  ")
             try:
-                figure = fazer_imagem(
+                view = QualityWorkspace(
+                    frame,
                     spectra,
                     record["start"],
                     record["stop"],
                     record["nx"],
                     record["ny"],
-                    5759,
+                    original_matrix=self.matrix,
+                    name=record["name"],
                     dependency_handler=self.dependency_handler,
                     source_path=self.source_path,
                     software_version=self.software_version,
-                    embed_parent=frame,
-                    spectrum_callback=lambda number, x, y, row, col, mid=record[
-                        "id"
-                    ]: self.inspect_pixel(mid, row, col, open_full=True),
+                    on_select=lambda row, col, mid=record["id"]: self.inspect_pixel(
+                        mid, row, col, open_full=False
+                    ),
+                    on_full=lambda row, col, mid=record["id"]: self.inspect_pixel(
+                        mid, row, col, open_full=True
+                    ),
                 )
+                figure = view.figure
             except Exception as exc:
                 frame.destroy()
                 messagebox.showerror(
                     "Map Data Quality", str(exc), parent=self.winfo_toplevel()
                 )
+                self._opening_quality = False
                 return
             record.update(
                 spectra=spectra,
                 quality_figure=figure,
                 quality_frame=frame,
+                quality_view=view,
                 area=figure._imespec_area,
             )
             record["quality_cid"] = figure.canvas.mpl_connect(
                 "draw_event",
                 lambda event, mid=record["id"]: self._queue_quality_refresh(mid),
             )
+            self._opening_quality = False
         previous = self._record()
         if previous is None or (previous["nx"], previous["ny"]) != (
             record["nx"],
@@ -957,9 +973,31 @@ class RamanMapCollection(ttk.Frame):
         self._draw_spectrum()
         self.quality_notebook.select(record["quality_frame"])
         self.show_quality_callback()
+        self._sync_quality_selector(record["id"])
         self.status_callback(
             f"Data Quality: {record['name']}. Corrections are retained individually for this map."
         )
+
+    def _sync_quality_selector(self, active=None):
+        if self.quality_selector is None:
+            return
+        bands = [r for r in self.records if r.get("kind") != "ratio"]
+        self.quality_selector.configure(
+            values=[r["name"] for r in bands], state="readonly" if bands else "disabled"
+        )
+        if not bands:
+            self.quality_selector.set("")
+        record = self._record(active) if active is not None else self._record()
+        if record and record.get("kind") != "ratio":
+            self.quality_selector.set(record["name"])
+
+    def open_quality_from_selector(self, event=None):
+        if self.quality_selector is None:
+            return
+        bands = [r for r in self.records if r.get("kind") != "ratio"]
+        index = self.quality_selector.current()
+        if 0 <= index < len(bands):
+            self.open_quality(bands[index]["id"])
 
     def refresh_map(self, map_id):
         if self._closed:
@@ -1009,6 +1047,7 @@ class RamanMapCollection(ttk.Frame):
         self.status_callback(
             f"Removed {record['name']} and {len(dependents)} dependent ratio(s)."
         )
+        self._sync_quality_selector()
 
     def _dispose_record(self, record):
         figure = record.get("quality_figure")

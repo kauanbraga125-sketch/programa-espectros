@@ -1,4 +1,4 @@
-# Arquitetura 1.4.0
+# Arquitetura 1.4.1
 
 | Arquivo | Responsabilidade |
 |---|---|
@@ -6,7 +6,8 @@
 | `imespec_app/window.py` | Interface Qt, navegação, worker, gráficos, projetos e exportação. |
 | `imespec_app/spectra.py` | Espectros somente leitura, importação, grupos, deslocamentos e persistência. Sem GUI. |
 | `Imespec1.py` | Workspace Tkinter preservado; no modo de compatibilidade, Início/Multi-Spectra retorna ao Qt. |
-| `imespec_maps.py` | Coleção de mapas e razões, inspeção e exportação. Preservado da versão 1.3.0. |
+| `imespec_maps.py` | Coleção de mapas e razões, inspeção e exportação; conecta a nova tela Data Quality aos mesmos cálculos. |
+| `imespec_quality.py` | Layout responsivo e controles nativos para Data Quality; delega a ciência ao núcleo existente. |
 | `imespec_analysis.py` | Razões de áreas, validade e prévia numérica da integração. Preservado. |
 | `imespec_bib1.py` | Núcleo existente de análise e ferramentas de mapas. Preservado. |
 | `packaging/` | PyInstaller, instalador Inno Setup, ícone e smoke tests do executável. |
@@ -19,6 +20,9 @@ a janela Tk está pronta. Ao sair do mapa, o Qt retorna com os dados da série e
 O usuário vê um workspace por vez.
 
 Esta etapa não converte toda a interface antiga para Qt. Os rótulos do Raman Map permanecem em inglês.
+Na versão 1.4.1, Data Quality usa controles Tk em português e um espectro integrado à própria tela.
+`fazer_imagem` e todos os algoritmos de correção continuam intactos. A coleção apenas conecta o novo
+painel aos callbacks existentes, preservando o estado independente de cada banda e as razões derivadas.
 Os últimos caminhos do mapa ficam na pasta de dados do usuário, não na pasta do aplicativo instalado.
 O EXE não tenta executar pip: formatos opcionais adicionais exigem um pacote que inclua suas dependências.
 

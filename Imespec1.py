@@ -59,7 +59,7 @@ pasta_estado = os.path.join(
 )
 os.makedirs(pasta_estado, exist_ok=True)
 arquivo_memoria = os.path.join(pasta_estado, "ultimo_arquivo.txt")
-IMESPEC_VERSION = "1.4.0"
+IMESPEC_VERSION = "1.4.1"
 IMESPEC_EDITION = "Raman Analysis Workspace"
 _LEGACY_CHILD = os.environ.get("IMESPEC_LEGACY_CHILD") == "1"
 _MODERN_RETURN_CODE = 0
@@ -977,13 +977,22 @@ def abrir_imagem_raman():
     notebook_raman.add(aba_mapa, text="  Data Quality  ")
     notebook_raman.add(aba_pixel, text="  Pixel Spectrum  ")
 
-    ttk.Label(
-        aba_mapa,
-        text="Choose Data Quality on a saved map. Each band's corrections are retained individually.",
-        padding=(12, 8),
-        foreground=PALETTE["muted"],
-    ).pack(fill="x")
-    notebook_qualidade = ttk.Notebook(aba_mapa)
+    quality_header = ttk.Frame(aba_mapa, padding=(12, 10), style="Surface.TFrame")
+    quality_header.pack(fill="x")
+    ttk.Label(quality_header, text="Mapa:", style="Section.TLabel").pack(
+        side="left", padx=(0, 8)
+    )
+    quality_selector = ttk.Combobox(quality_header, state="disabled", width=24)
+    quality_selector.pack(side="left", padx=(0, 14))
+    quality_hint = tk.StringVar(
+        value="Gere um mapa em Spectrum & Band para abrir as ferramentas."
+    )
+    ttk.Label(quality_header, textvariable=quality_hint, style="Caption.TLabel").pack(
+        side="left"
+    )
+    quality_style = ttk.Style(aba_mapa)
+    quality_style.layout("Quality.TNotebook.Tab", [])
+    notebook_qualidade = ttk.Notebook(aba_mapa, style="Quality.TNotebook")
     notebook_qualidade.pack(fill="both", expand=True)
 
     # --------------------------------------------------------
@@ -1481,9 +1490,37 @@ def abrir_imagem_raman():
             foco=package, recurso=feature, parent=janela
         ),
         status_callback=atualizar_status,
+        quality_selector=quality_selector,
     )
     colecao_mapas.pack(fill="both", expand=True)
     modulo_raman._imespec_maps = colecao_mapas
+    quality_selector.bind(
+        "<<ComboboxSelected>>", colecao_mapas.open_quality_from_selector
+    )
+
+    def abrir_qualidade_ao_selecionar(event=None):
+        if str(notebook_raman.select()) != str(aba_mapa):
+            return
+        bands = [
+            record for record in colecao_mapas.records if record.get("kind") != "ratio"
+        ]
+        if bands:
+            quality_hint.set("Cada banda mantém suas próprias correções.")
+            active = colecao_mapas._record()
+            target = (
+                active["numerator_id"]
+                if active and active.get("kind") == "ratio"
+                else None
+            )
+            colecao_mapas.open_quality(target)
+        else:
+            quality_hint.set(
+                "Gere um mapa em Spectrum & Band para abrir as ferramentas."
+            )
+
+    notebook_raman.bind(
+        "<<NotebookTabChanged>>", abrir_qualidade_ao_selecionar, add="+"
+    )
 
     def faz_imagem(event):
         indmin = estado["indmin"]

@@ -14,7 +14,7 @@ a = Analysis(
     datas=[(str(root / "assets"), "assets"),
            (str(root / "README.md"), "."),
            (str(root / "docs"), "docs")] + metadata_files,
-    hiddenimports=["Imespec1", "imespec_bib1", "imespec_maps", "imespec_analysis", "imespec_theme",
+    hiddenimports=["Imespec1", "imespec_bib1", "imespec_maps", "imespec_analysis", "imespec_theme", "imespec_quality",
                    "matplotlib.backends.backend_tkagg", "matplotlib.backends.backend_qtagg",
                    "scipy.signal", "scipy.sparse.linalg", "scipy.io", "mpl_toolkits.mplot3d"],
     hookspath=[], hooksconfig={"matplotlib": {"backends": ["TkAgg", "QtAgg"]}},
