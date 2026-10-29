@@ -135,7 +135,9 @@ class QualityWorkspace(ttk.Frame):
         self.map_ax.set_position([0.16, 0.12, 0.62, 0.80])
         self.colorbar.ax.set_position([0.81, 0.12, 0.035, 0.80])
         self.map_ax.set_title(
-            name, fontsize=11, fontweight="bold", color=PALETTE["text"]
+            f"{name}\n{min(matrix[start, 0], matrix[stop, 0]):.1f}–"
+            f"{max(matrix[start, 0], matrix[stop, 0]):.1f} cm⁻¹",
+            fontsize=10, fontweight="bold", color=PALETTE["text"]
         )
         self.map_ax.set_xlabel("X (pixel)", fontsize=9)
         self.map_ax.set_ylabel("Y (pixel)", fontsize=9)
