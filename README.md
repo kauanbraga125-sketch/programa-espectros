@@ -1,10 +1,10 @@
-# IMESPEC 1.4.1
+# IMESPEC 1.5.0
 
 Programa desktop de análise Raman do projeto de iniciação científica de Kauan.
 Esta versão traz a nova tela de espectros em **Qt/PySide6**, com organização inspirada no Origin,
 e conserva o módulo Raman Map com mapas de áreas e razão A/B.
 
-Na versão **1.4.1**, a tela **Data Quality** foi reorganizada: mapa, espectro do ponto e controles
+Na versão **1.5.0**, a tela **Data Quality** foi reorganizada: mapa, espectro do ponto e controles
 de correção ficam juntos. Abrir a aba carrega as ferramentas do mapa ativo; o seletor Mapa troca
 a banda sem perder as correções das demais. Os cálculos existentes foram preservados.
 
@@ -12,8 +12,8 @@ a banda sem perder as correções das demais. Os cálculos existentes foram pres
 
 1. Abra [Actions → IMESPEC para Windows](https://github.com/kauanbraga125-sketch/programa-espectros/actions/workflows/windows.yml).
 2. Abra a execução mais recente que terminou com sucesso.
-3. Em **Artifacts**, baixe **IMESPEC-1.4.1-Instalador-Windows**.
-4. Extraia o ZIP e execute **IMESPEC-1.4.1-Setup.exe**.
+3. Em **Artifacts**, baixe **IMESPEC-1.5.0-Instalador-Windows**.
+4. Extraia o ZIP e execute **IMESPEC-1.5.0-Setup.exe**.
 
 O instalador inclui o Python e as dependências necessárias. Não é preciso instalar Python à parte.
 A instalação é feita para o usuário atual, com atalho no menu Iniciar e opção de atalho na área de trabalho.
@@ -91,3 +91,12 @@ Depois disponibiliza o instalador, a versão portátil e seus hashes SHA-256.
 
 Arquitetura e limites estão em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 Os dados experimentais e os projetos pessoais não são enviados para este repositório.
+
+
+## Análise de picos (1.5.0)
+
+Use **Análise > Ajustar picos e sobretons** ou **Analisar picos** para estimar
+centros, larguras, áreas e comparações entre ordens. Perfis Lorentziana,
+Gaussiana e Pseudo-Voigt, fundo simultâneo, resíduos, bootstrap opcional e
+exportação JSON/CSV. Dados originais preservados; atribuições e resposta
+instrumental exigem revisão. Leia [o método e os limites](docs/ANALISE_DE_PICOS.md).

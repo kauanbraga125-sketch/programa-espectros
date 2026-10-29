@@ -46,13 +46,13 @@ jobs:
           if (-not (Test-Path $compiler)) {
             choco install innosetup --no-progress -y
           }
-          & $compiler /DAppVersion=1.4.1 packaging/windows.iss
+          & $compiler /DAppVersion=1.5.0 packaging/windows.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Testar instalação e abertura
         shell: pwsh
         run: |
           $target = Join-Path $env:RUNNER_TEMP "IMESPEC-installed"
-          $setup = Resolve-Path "installer-output/IMESPEC-1.4.1-Setup.exe"
+          $setup = Resolve-Path "installer-output/IMESPEC-1.5.0-Setup.exe"
           $proc = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$target" -PassThru -Wait
           if ($proc.ExitCode -ne 0) { throw "Installer failed: $($proc.ExitCode)" }
           $installed = Join-Path $target 'IMESPEC.exe'
@@ -67,7 +67,7 @@ jobs:
       - name: Preparar pacote portátil e verificação
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/IMESPEC -DestinationPath installer-output/IMESPEC-1.4.1-Windows-portatil.zip
+          Compress-Archive -Path dist/IMESPEC -DestinationPath installer-output/IMESPEC-1.5.0-Windows-portatil.zip
           Get-ChildItem installer-output -File | Where-Object Extension -ne '.sha256' | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
             "$hash  $($_.Name)" | Out-File "$($_.FullName).sha256" -Encoding ascii
@@ -75,16 +75,17 @@ jobs:
       - name: Disponibilizar instalador
         uses: actions/upload-artifact@v4
         with:
-          name: IMESPEC-1.4.1-Instalador-Windows
+          name: IMESPEC-1.5.0-Instalador-Windows
           path: |
-            installer-output/IMESPEC-1.4.1-Setup.exe
-            installer-output/IMESPEC-1.4.1-Setup.exe.sha256
+            installer-output/IMESPEC-1.5.0-Setup.exe
+            installer-output/IMESPEC-1.5.0-Setup.exe.sha256
           retention-days: 90
       - name: Disponibilizar versão portátil
         uses: actions/upload-artifact@v4
         with:
-          name: IMESPEC-1.4.1-Portatil-Windows
+          name: IMESPEC-1.5.0-Portatil-Windows
           path: |
-            installer-output/IMESPEC-1.4.1-Windows-portatil.zip
-            installer-output/IMESPEC-1.4.1-Windows-portatil.zip.sha256
+            installer-output/IMESPEC-1.5.0-Windows-portatil.zip
+            installer-output/IMESPEC-1.5.0-Windows-portatil.zip.sha256
           retention-days: 90
+

@@ -227,6 +227,12 @@ class MainWindow(QMainWindow):
             "Cascata", lambda: self.show_page("multi"), QKeySequence("Ctrl+2")
         )
         view.addAction("Início", lambda: self.show_page("home"), QKeySequence("Ctrl+H"))
+        analysis_menu = self.menuBar().addMenu("Análise")
+        analysis_menu.addAction(
+            "Ajustar picos e sobretons…",
+            self.open_peak_analysis,
+            QKeySequence("Ctrl+3"),
+        )
         help_menu = self.menuBar().addMenu("Ajuda")
         help_menu.addAction("Como usar", self.show_help, QKeySequence("F1"))
         help_menu.addAction(
@@ -377,6 +383,8 @@ class MainWindow(QMainWindow):
             self.mode_buttons[key] = b
             view_bar.addWidget(b)
         view_bar.addStretch()
+        self.peak_button = button("Analisar picos…", self.open_peak_analysis)
+        view_bar.addWidget(self.peak_button)
         self.fit_button = button("Enquadrar", lambda: self.render(reset_view=True))
         view_bar.addWidget(self.fit_button)
         body.addLayout(view_bar)
@@ -664,6 +672,26 @@ class MainWindow(QMainWindow):
         if result == QMessageBox.StandardButton.Save:
             return self.save_session()
         return result == QMessageBox.StandardButton.Discard
+
+    def open_peak_analysis(self, checked=False):
+        if not self.spectra:
+            QMessageBox.information(
+                self, "Análise de picos", "Abra os espectros que deseja analisar."
+            )
+            return
+        current = getattr(self, "_peak_analysis", None)
+        if current is not None:
+            current.show()
+            current.raise_()
+            current.activateWindow()
+            return
+        from .peak_window import PeakAnalysisDialog
+
+        dialog = PeakAnalysisDialog(self.spectra, self)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self._peak_analysis = dialog
+        dialog.destroyed.connect(lambda: setattr(self, "_peak_analysis", None))
+        dialog.show()
 
     def open_spectra(self, checked=False, append=False):
         if self._busy:
@@ -1394,6 +1422,12 @@ class MainWindow(QMainWindow):
         etapa da migração. Ao voltar por Início ou Multi-Spectra, a série da nova tela continua
         aberta. Exporte os mapas antes de sair do módulo; a sessão de mapas ainda é temporária.</p>
         <p>O Waterfall 3D representa a série de espectros. Ele não mede a altura física da amostra.</p>
+        <h3>Análise de picos</h3>
+        <p>Análise → Ajustar picos e sobretons (Ctrl+3) estima centros, larguras e áreas.
+        Escolha o perfil e o fundo, ajuste a série e revise dados, componentes e resíduos.
+        Mais opções permite estimar erros estatísticos por reamostragem e informar divisores de área.
+        Exporte os parâmetros e as comparações em JSON/CSV. Ajustes não confirmam atribuições físicas;
+        os erros não incluem calibração ou escolha do modelo. Os espectros originais são preservados.</p>
         <p><b>Atalhos:</b> Ctrl+O abrir espectros; Ctrl+S salvar projeto; Ctrl+E exportar figura;
         Ctrl+1 Raman Map; Ctrl+2 espectros; Ctrl+H início.</p>
         """)
@@ -1404,6 +1438,13 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def closeEvent(self, event):
+        analysis = getattr(self, "_peak_analysis", None)
+        if analysis is not None and analysis.running:
+            analysis.cancel()
+            analysis._thread.finished.connect(self.close)
+            event.ignore()
+            return
+
         if self._busy or self._thread is not None:
             self.statusBar().showMessage(
                 "Aguarde a leitura dos arquivos terminar antes de fechar."
@@ -1439,8 +1480,27 @@ def run(argv=None):
     if "--smoke-test" in (argv or []):
 
         def check():
-            window.dirty = False
-            window.close()
+            try:
+                # Exercise packaged SciPy and the actual native analysis dialog.
+                import numpy as np
+                from .spectra import Spectrum
+                from .peaks import BANDS, analyze_series, primary, profile
+
+                x = np.linspace(1750, 1980, 500)
+                y = 30 + profile(x, 12000, 1864, 14)
+                window.spectra = [Spectrum(x, y, "smoke_A_15K.txt", temperature=15)]
+                report = analyze_series(window.spectra, (BANDS[0].single(),))
+                assert len(report["fits"]) == 1
+                assert abs(primary(report["fits"][0])["center_cm1"] - 1864) < 0.1
+                window.open_peak_analysis()
+                dialog = window._peak_analysis
+                dialog.on_result(report)
+                dialog.canvas.draw()
+                dialog.close()
+                window.dirty = False
+                window.close()
+            except Exception:
+                app.exit(1)
 
         QTimer.singleShot(700, check)
     return app.exec()

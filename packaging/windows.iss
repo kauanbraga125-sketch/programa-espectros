@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "1.4.1"
+  #define AppVersion "1.5.0"
 #endif
 
 [Setup]
@@ -46,3 +46,4 @@ Root: HKCU; Subkey: "Software\Classes\IMESPEC.Project\shell\open\command"; Value
 
 [Run]
 Filename: "{app}\IMESPEC.exe"; Description: "Abrir o IMESPEC"; Flags: nowait postinstall skipifsilent
+
